@@ -1,3 +1,4 @@
+import os
 import logging
 from sqlalchemy import create_engine
 from sqlalchemy.orm import declarative_base, sessionmaker
@@ -7,6 +8,11 @@ from app.config import settings
 logger = logging.getLogger("pharma_rca.database")
 
 db_url = settings.DATABASE_URL
+# In serverless environments like Vercel, the filesystem is read-only except /tmp
+if os.getenv("VERCEL") and db_url.startswith("sqlite") and "/tmp" not in db_url:
+    db_url = "sqlite:////tmp/rca_pharma.db"
+    logger.info("Detected Vercel environment. Redirected SQLite path to /tmp/rca_pharma.db")
+
 connect_args = {}
 
 if db_url.startswith("sqlite"):
