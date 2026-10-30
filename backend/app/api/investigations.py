@@ -43,6 +43,13 @@ def get_sample_incidents():
                 "batch": "ATV-2026-114",
                 "department": "Finished API Processing & Drying",
                 "text": SAMPLE_INCIDENT_TEXTS["residual_solvent"]
+            },
+            {
+                "key": "moisture_content_oos",
+                "title": "API Sample A - High Moisture Content (LOD OOS)",
+                "batch": "BATCH-101",
+                "department": "Production",
+                "text": SAMPLE_INCIDENT_TEXTS["moisture_content_oos"]
             }
         ]
     }

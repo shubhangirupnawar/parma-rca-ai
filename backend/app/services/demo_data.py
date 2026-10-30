@@ -59,6 +59,38 @@ MISSING EVIDENCE:
 - Chiller condenser heat exchanger differential pressure and descaling service record.
 - In-process moisture and solvent loss on drying (LOD) check at 12 hours.
 - Nitrogen purging flow meter calibration log.
+""",
+    "moisture_content_oos": """
+QUALITY DEVIATION REPORT (INCIDENT-2026-MC-101)
+Date: 2026-05-10
+Department: Production
+Reporter: QC Analyst
+Product: API Sample A
+Batch Number: BATCH-101
+Equipment: Fluid Bed Dryer FBD-07 & Moisture Analyzer MA-03
+
+INCIDENT DESCRIPTION:
+During routine quality testing, the moisture content in API Batch BATCH-101 was found to be above the specified acceptance limit. The batch has been placed on hold pending investigation. The cause of the deviation has not yet been confirmed. Further investigation is required to review manufacturing records, drying process parameters, equipment logs, and quality control results.
+
+PRELIMINARY INVESTIGATION & OBSERVATIONS:
+1. The Loss on Drying (LOD) result was 3.8% w/w against the specification limit of NMT 2.0% w/w.
+2. Review of the drying cycle log indicates Fluid Bed Dryer FBD-07 inlet air temperature dropped to 38°C for approximately 45 minutes during the drying cycle (standard: 60°C ± 5°C).
+3. The air handling unit (AHU-12) filter differential pressure was recorded at 580 Pa, exceeding the alarm limit of 500 Pa, indicating a partially blocked HEPA filter reducing airflow.
+4. Ambient relative humidity in the processing area was recorded at 72% RH during the batch drying window (standard: NMT 50% RH).
+5. The granulation endpoint moisture was not verified before transfer to the dryer.
+
+AVAILABLE EVIDENCE:
+- QC LOD Test Report showing 3.8% w/w moisture content.
+- FBD-07 process parameter recorder chart (inlet/outlet temperature, airflow).
+- AHU-12 filter differential pressure log.
+- Area environmental monitoring log (temperature and humidity).
+
+MISSING EVIDENCE / DATA GAPS:
+- Granulation endpoint in-process moisture check (LOD at granulation discharge).
+- FBD-07 inlet air heater element resistance check and maintenance log.
+- AHU-12 HEPA filter replacement and integrity test record.
+- Calibration certificate for Moisture Analyzer MA-03.
+- Compressed air dew point verification log for FBD-07 supply line.
 """
 }
 
@@ -85,6 +117,31 @@ def generate_demo_extraction(raw_text: str, model_name: str) -> dict:
                 "Operator shift handover logbook sign-off for Shift B on 2026-03-14",
                 "Temperature sensor calibration certificate for CR-304 RTD-03 (last calibrated 11 months ago)",
                 "Cleaning validation swab report for Crystallizer CR-304 prior to batch charging"
+            ],
+            "is_demo_mode": True,
+            "ai_model_used": f"{model_name} (Pharma Demo Mode)"
+        }
+    elif "moisture" in text_lower or "batch-101" in text_lower or "api sample a" in text_lower:
+        return {
+            "incident_title": "High Moisture Content in API Batch BATCH-101",
+            "incident_description": "During routine quality testing, the moisture content in API Batch BATCH-101 (API Sample A) was found to be 3.8% w/w, exceeding the acceptance limit of NMT 2.0% w/w. Investigation required to review drying process parameters, equipment logs, and quality control results.",
+            "batch_number": "BATCH-101",
+            "product_name": "API Sample A",
+            "department": "Production",
+            "incident_date": "2026-05-10",
+            "observed_issue": "Loss on Drying (LOD) result of 3.8% w/w exceeding specification limit of NMT 2.0% w/w",
+            "available_evidence": [
+                "QC LOD Test Report showing 3.8% w/w moisture content",
+                "FBD-07 process parameter recorder chart (inlet/outlet temperature, airflow)",
+                "AHU-12 filter differential pressure log showing 580 Pa (alarm limit: 500 Pa)",
+                "Area environmental monitoring log showing 72% RH (standard: NMT 50% RH)"
+            ],
+            "missing_information": [
+                "Granulation endpoint in-process moisture check (LOD at granulation discharge)",
+                "FBD-07 inlet air heater element resistance check and maintenance log",
+                "AHU-12 HEPA filter replacement and integrity test record",
+                "Calibration certificate for Moisture Analyzer MA-03",
+                "Compressed air dew point verification log for FBD-07 supply line"
             ],
             "is_demo_mode": True,
             "ai_model_used": f"{model_name} (Pharma Demo Mode)"
@@ -136,6 +193,280 @@ def generate_demo_extraction(raw_text: str, model_name: str) -> dict:
         }
 
 def generate_demo_rca_and_capa(data: dict) -> dict:
+    # Determine scenario from data
+    desc = (data.get("incident_description", "") + " " + data.get("incident_title", "")).lower()
+    
+    if "moisture" in desc or "batch-101" in desc or "api sample a" in desc:
+        return _generate_moisture_content_rca()
+    
+    return _generate_paracetamol_rca()
+
+def _generate_moisture_content_rca() -> dict:
+    five_whys = [
+        {
+            "level": 1,
+            "question": "Why did API Batch BATCH-101 fail the moisture content specification?",
+            "answer": "The Loss on Drying (LOD) result was 3.8% w/w, significantly exceeding the acceptance limit of NMT 2.0% w/w, indicating incomplete drying of the API granules."
+        },
+        {
+            "level": 2,
+            "question": "Why was the drying process incomplete?",
+            "answer": "The Fluid Bed Dryer FBD-07 inlet air temperature dropped to 38°C for ~45 minutes (standard: 60°C ± 5°C) and the air handling unit HEPA filter was partially blocked, reducing drying airflow."
+        },
+        {
+            "level": 3,
+            "question": "Why did the inlet air temperature drop and airflow reduce?",
+            "answer": "The AHU-12 HEPA filter differential pressure exceeded the alarm limit (580 Pa vs 500 Pa limit), restricting airflow, and the inlet air heater may have had degraded heating elements."
+        },
+        {
+            "level": 4,
+            "question": "Why was the AHU filter in a degraded state and the heater not maintaining temperature?",
+            "answer": "Preventive maintenance records for AHU-12 filter replacement and FBD-07 heater element checks were not up to date. Additionally, ambient RH was 72% (standard NMT 50%), adding excessive moisture load."
+        },
+        {
+            "level": 5,
+            "question": "Why were preventive maintenance schedules not followed and environmental controls not enforced?",
+            "answer": "Root Cause: Gaps in the preventive maintenance tracking system for critical drying equipment and absence of an automated environmental interlock to halt drying operations when area RH exceeds specification limits."
+        }
+    ]
+
+    root_causes = [
+        {
+            "category": "Machine",
+            "hypothesis_title": "Fluid Bed Dryer FBD-07 Inlet Air Heater Degradation",
+            "description": "The inlet air heater elements in FBD-07 failed to maintain the required 60°C ± 5°C drying temperature, dropping to 38°C for 45 minutes, resulting in insufficient moisture removal.",
+            "why_considered": "Process parameter recorder shows clear temperature deviation during the drying cycle.",
+            "supporting_evidence": [
+                "FBD-07 process parameter recorder chart showing temperature drop to 38°C",
+                "QC LOD report confirming 3.8% w/w moisture"
+            ],
+            "contradictory_evidence": [
+                "Heater was functional before and after the event; intermittent fault suspected"
+            ],
+            "further_investigation_steps": [
+                "Perform heater element resistance check and insulation test",
+                "Review FBD-07 maintenance log for last heater servicing date"
+            ],
+            "confidence_level": "High Confidence",
+            "is_confirmed_by_human": False
+        },
+        {
+            "category": "Machine",
+            "hypothesis_title": "AHU-12 HEPA Filter Blockage Reducing Drying Airflow",
+            "description": "AHU-12 filter differential pressure at 580 Pa exceeded the 500 Pa alarm limit, indicating partial blockage that reduced airflow velocity through the fluid bed, compromising drying efficiency.",
+            "why_considered": "Reduced airflow directly impacts fluidization and moisture removal rate in fluid bed drying.",
+            "supporting_evidence": [
+                "AHU-12 differential pressure log showing 580 Pa"
+            ],
+            "contradictory_evidence": [],
+            "further_investigation_steps": [
+                "Retrieve AHU-12 HEPA filter replacement history and integrity test records",
+                "Measure actual airflow velocity at FBD-07 distribution plate"
+            ],
+            "confidence_level": "High Confidence",
+            "is_confirmed_by_human": False
+        },
+        {
+            "category": "Environment",
+            "hypothesis_title": "Excessive Ambient Humidity in Processing Area (72% RH)",
+            "description": "Ambient relative humidity in the processing area was recorded at 72% RH during drying, well above the NMT 50% RH standard, introducing excessive moisture into the drying air stream.",
+            "why_considered": "High-humidity inlet air significantly reduces the moisture-carrying capacity and drying efficiency of the fluid bed dryer.",
+            "supporting_evidence": [
+                "Area environmental monitoring log showing 72% RH"
+            ],
+            "contradictory_evidence": [
+                "Dehumidification system was operational but at reduced capacity"
+            ],
+            "further_investigation_steps": [
+                "Review HVAC dehumidification system capacity and maintenance records",
+                "Verify compressed air dew point for FBD-07 supply line"
+            ],
+            "confidence_level": "High Confidence",
+            "is_confirmed_by_human": False
+        },
+        {
+            "category": "Method",
+            "hypothesis_title": "Missing Granulation Endpoint Moisture Verification",
+            "description": "The granulation endpoint moisture was not verified before transfer to the dryer. If the granules entered the dryer with higher-than-expected moisture, the standard drying cycle would be insufficient.",
+            "why_considered": "Without verifying input moisture level, the drying cycle duration and parameters cannot be adjusted appropriately.",
+            "supporting_evidence": [
+                "No in-process LOD check recorded at granulation discharge"
+            ],
+            "contradictory_evidence": [],
+            "further_investigation_steps": [
+                "Review SOP for granulation endpoint criteria and mandatory in-process checks",
+                "Interview production operators about granulation endpoint determination"
+            ],
+            "confidence_level": "Moderate Hypothesis",
+            "is_confirmed_by_human": False
+        },
+        {
+            "category": "Measurement",
+            "hypothesis_title": "Moisture Analyzer MA-03 Calibration Status Unverified",
+            "description": "Calibration certificate for Moisture Analyzer MA-03 used for the LOD test was not available. Potential measurement inaccuracy could contribute to or mask the true moisture level.",
+            "why_considered": "Standard GxP practice requires verified calibration of analytical instruments before use in release testing.",
+            "supporting_evidence": [
+                "Missing calibration certificate for MA-03 in equipment log"
+            ],
+            "contradictory_evidence": [
+                "Cross-verification with Karl Fischer titration could confirm LOD accuracy"
+            ],
+            "further_investigation_steps": [
+                "Perform immediate calibration verification of MA-03",
+                "Run confirmatory Karl Fischer moisture determination on retain sample"
+            ],
+            "confidence_level": "Moderate Hypothesis",
+            "is_confirmed_by_human": False
+        },
+        {
+            "category": "Man",
+            "hypothesis_title": "Operator Did Not Extend Drying Cycle Despite Temperature Drop",
+            "description": "When the inlet air temperature dropped to 38°C, the operator did not extend the drying cycle duration or escalate the deviation, potentially due to insufficient training on critical process parameter monitoring.",
+            "why_considered": "A trained operator should recognize a significant temperature deviation and take corrective action or report deviation.",
+            "supporting_evidence": [
+                "No deviation report filed for the 45-minute temperature drop"
+            ],
+            "contradictory_evidence": [],
+            "further_investigation_steps": [
+                "Interview operator on duty during the drying cycle",
+                "Review operator training records for FBD-07 operation and deviation reporting SOP"
+            ],
+            "confidence_level": "Moderate Hypothesis",
+            "is_confirmed_by_human": False
+        }
+    ]
+
+    evidence_items = [
+        {
+            "item_type": "AVAILABLE",
+            "title": "QC LOD Test Report - BATCH-101",
+            "description": "Confirms Loss on Drying result of 3.8% w/w, exceeding specification limit of NMT 2.0% w/w.",
+            "source_reference": "QC Analytical Laboratory",
+            "is_collected": True
+        },
+        {
+            "item_type": "AVAILABLE",
+            "title": "FBD-07 Process Parameter Recorder Chart",
+            "description": "Records inlet/outlet temperature and airflow showing 45-minute temperature drop to 38°C during drying cycle.",
+            "source_reference": "Production Equipment Data Logger",
+            "is_collected": True
+        },
+        {
+            "item_type": "AVAILABLE",
+            "title": "AHU-12 Filter Differential Pressure Log",
+            "description": "Shows differential pressure of 580 Pa, exceeding the alarm limit of 500 Pa, indicating partially blocked HEPA filter.",
+            "source_reference": "HVAC Monitoring System",
+            "is_collected": True
+        },
+        {
+            "item_type": "AVAILABLE",
+            "title": "Area Environmental Monitoring Log",
+            "description": "Records ambient temperature and relative humidity at 72% RH during batch drying window (standard: NMT 50% RH).",
+            "source_reference": "Environmental Monitoring System",
+            "is_collected": True
+        },
+        {
+            "item_type": "MISSING",
+            "title": "Granulation Endpoint In-Process LOD Check",
+            "description": "Pre-drying moisture check at granulation discharge to verify input moisture level before transfer to FBD-07.",
+            "source_reference": "Production In-Process Control",
+            "is_collected": False
+        },
+        {
+            "item_type": "MISSING",
+            "title": "FBD-07 Heater Element Maintenance Log",
+            "description": "Inlet air heater element resistance check and last servicing date to verify heater functionality.",
+            "source_reference": "Engineering & Maintenance Dept",
+            "is_collected": False
+        },
+        {
+            "item_type": "MISSING",
+            "title": "AHU-12 HEPA Filter Integrity Test Record",
+            "description": "Filter replacement history and DOP/PAO integrity test record for AHU-12.",
+            "source_reference": "HVAC Maintenance",
+            "is_collected": False
+        },
+        {
+            "item_type": "MISSING",
+            "title": "Moisture Analyzer MA-03 Calibration Certificate",
+            "description": "Current calibration verification record to confirm measurement accuracy of the LOD instrument.",
+            "source_reference": "Instrumentation & Metrology Dept",
+            "is_collected": False
+        },
+        {
+            "item_type": "MISSING",
+            "title": "Compressed Air Dew Point Verification Log",
+            "description": "Dew point verification of compressed air supply to FBD-07 to rule out moisture introduction from compressed air system.",
+            "source_reference": "Utility Engineering",
+            "is_collected": False
+        }
+    ]
+
+    capas = [
+        {
+            "action_type": "CORRECTIVE",
+            "action_description": "Quarantine Batch BATCH-101 and initiate Material Review Board (MRB) evaluation. Apply hold status in ERP system and physical quarantine signage. Evaluate re-drying feasibility under extended validated drying parameters.",
+            "reason_for_recommendation": "Immediate containment to prevent release of out-of-specification API with high moisture content into downstream pharmaceutical formulation.",
+            "supporting_evidence": "QC LOD Test Report confirming 3.8% w/w moisture (specification: NMT 2.0% w/w).",
+            "suggested_department": "Quality Assurance / Production",
+            "suggested_priority": "CRITICAL",
+            "human_status": "PENDING_REVIEW"
+        },
+        {
+            "action_type": "CORRECTIVE",
+            "action_description": "Replace AHU-12 HEPA filter immediately and perform DOP integrity test. Inspect and test FBD-07 inlet air heater elements. Restore both to validated operational state before resuming production.",
+            "reason_for_recommendation": "Restore critical drying equipment to validated GxP condition. Blocked filter and degraded heater are direct contributing causes.",
+            "supporting_evidence": "AHU-12 differential pressure log (580 Pa > 500 Pa alarm) and FBD-07 temperature drop to 38°C.",
+            "suggested_department": "Engineering & Maintenance",
+            "suggested_priority": "HIGH",
+            "human_status": "PENDING_REVIEW"
+        },
+        {
+            "action_type": "PREVENTIVE",
+            "action_description": "Implement automated environmental interlock on FBD-07 that halts drying operations and triggers alarm when area RH exceeds 55% or inlet air temperature drops below 55°C for more than 5 minutes.",
+            "reason_for_recommendation": "Prevents future drying under suboptimal environmental conditions without operator dependence.",
+            "supporting_evidence": "72% RH recorded during drying and 45-minute temperature excursion went unreported.",
+            "suggested_department": "Automation & Instrumentation",
+            "suggested_priority": "HIGH",
+            "human_status": "PENDING_REVIEW"
+        },
+        {
+            "action_type": "PREVENTIVE",
+            "action_description": "Revise granulation SOP to mandate in-process LOD verification at granulation discharge before transfer to drying. Add LIMS gate requiring LOD result entry before dryer batch ticket can be initiated.",
+            "reason_for_recommendation": "Ensures drying parameters can be adjusted based on actual input moisture level, preventing under-drying.",
+            "supporting_evidence": "Missing granulation endpoint moisture verification for BATCH-101.",
+            "suggested_department": "Production & Quality Control",
+            "suggested_priority": "MEDIUM",
+            "human_status": "PENDING_REVIEW"
+        },
+        {
+            "action_type": "PREVENTIVE",
+            "action_description": "Establish enhanced preventive maintenance schedule: AHU HEPA filter replacement every 6 months with mandatory integrity testing, FBD heater element check quarterly, moisture analyzer calibration monthly.",
+            "reason_for_recommendation": "Addresses systemic gap in maintenance tracking that allowed critical equipment to operate in degraded state.",
+            "supporting_evidence": "Missing maintenance records for AHU-12, FBD-07 heater, and MA-03 calibration.",
+            "suggested_department": "Engineering & Quality Assurance",
+            "suggested_priority": "MEDIUM",
+            "human_status": "PENDING_REVIEW"
+        },
+        {
+            "action_type": "EFFECTIVENESS_VERIFICATION",
+            "action_description": "Monitor next five (5) consecutive API batches dried in FBD-07 for LOD compliance. Audit AHU differential pressure, area RH, and inlet air temperature at each batch. Perform 60-day effectiveness review.",
+            "reason_for_recommendation": "Validates that corrective and preventive actions effectively eliminate moisture-related OOS events.",
+            "supporting_evidence": "ICH Q10 Pharmaceutical Quality System continuous improvement requirement.",
+            "suggested_department": "Quality Assurance",
+            "suggested_priority": "HIGH",
+            "human_status": "PENDING_REVIEW"
+        }
+    ]
+
+    return {
+        "five_whys": five_whys,
+        "root_causes": root_causes,
+        "evidence_items": evidence_items,
+        "capa_recommendations": capas
+    }
+
+def _generate_paracetamol_rca() -> dict:
     five_whys = [
         {
             "level": 1,
